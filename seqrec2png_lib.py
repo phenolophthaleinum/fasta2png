@@ -14,11 +14,15 @@ from PIL import Image
 def timeit(func):
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
+        passed_args = kwargs
         tic = time.perf_counter()
         value = func(*args, **kwargs)
+        f_name = "standard"
+        if passed_args["comp_func"] is not None:
+            f_name = passed_args["comp_func"].__name__
         toc = time.perf_counter()
         elapsed_time = toc - tic
-        print(f"Elapsed time: {elapsed_time:0.8f} seconds")
+        print(f"{f_name} elapsed time: {elapsed_time:0.8f} seconds")
         return value, elapsed_time
 
     return wrapper_timer
@@ -29,16 +33,33 @@ def zstandard_compress(data):
     return cctx.compress(data)
 
 
+def zstandard_decompress(data):
+    dctx = zstandard.ZstdDecompressor()
+    return dctx.decompress(data)
+
+
 def ppm_compress(data):
     return pyppmd.compress(data)
+
+
+def ppm_decompress(data):
+    return pyppmd.decompress(data)
 
 
 def lz4_compress(data):
     return lz4.compress(data, compression_level=lz4.COMPRESSIONLEVEL_MINHC)
 
 
+def lz4_decommpress(data):
+    return lz4.decompress(data)
+
+
 def bz2_compress(data):
     return bz2.compress(data)
+
+
+def bz2_decompress(data):
+    return bz2.decompress(data)
 
 
 @timeit
@@ -57,3 +78,11 @@ def standard_workflow(input, output, comp_func):
     # print(len(n_seq))
     img = Image.frombytes('P', (int(dim), int(dim)), n_seq)
     img.save(output, bits=8)
+
+
+@timeit
+def standard_encode(input, comp_func):
+    r_img = Image.open(input)
+    if comp_func:
+        return dill.loads(comp_func(r_img.tobytes()))
+    return dill.loads(r_img.tobytes())

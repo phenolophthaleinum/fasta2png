@@ -8,8 +8,8 @@ import os
 # print(tmp)
 
 files = [
-    "X:/edwards2016/host/fasta/NC_017186.fna",
-    "X:/edwards2016/caenorhabditis_elegans.fna"
+    "D:/edwards2016/host/fasta/NC_017186.fna",
+    "D:/edwards2016/caenorhabditis_elegans.fna"
 ]
 funcs = {
     "standard": None,
@@ -26,7 +26,7 @@ for file in files:
     # df['file name'] = [sh_name]
     # df['original file size (MB)'] = [file_size]
     for f in funcs:
-        time = s2p.standard_workflow(file, f"bench/{outname}_{f}.png", funcs[f])[1]
+        time = s2p.standard_workflow(input=file, output=f"bench/{outname}_{f}.png", comp_func=funcs[f])[1]
         # df['type'] = f
         # df['exec time (s)'] = time
         new_size = os.stat(f"bench/{outname}_{f}.png").st_size / (1024 * 1024)
