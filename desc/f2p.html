@@ -1,0 +1,241 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>f2p</title>
+  <link rel="stylesheet" href="https://stackedit.io/style.css" />
+</head>
+
+<body class="stackedit">
+  <div class="stackedit__html"><h1 id="fasta2png">fasta2png</h1>
+<blockquote>
+<p>Kacper Dudczak, Aleksander Luboński, Maciej Michalczyk</p>
+</blockquote>
+<h2 id="w-skrócie">W skrócie</h2>
+<ul>
+<li>prosty sposób na bezstratne przekształcenie obiektu SeqRecord biopythona do postaci pliku png (w zasadzie każdy arbitralny obiekt da się przekształcić)</li>
+<li>powstały plik png jest otwieralny w każdym edytorze do plików graficznych</li>
+<li>prosty sposób odczytu pliku png do obiektu w kodzie (one-liner)</li>
+</ul>
+<h2 id="opis-działania">Opis działania</h2>
+<p><img src="seqrec2png_workflow.png" alt="f2p workflow"></p>
+<ul>
+<li>powyższy schemat skupia się na obsłudze sekwencji, ale pierwszy krok z podschematu <em>SeqRecord2png</em> można pominąć i zastąpić obsługą jakiegokolwiek obiektu</li>
+<li>wykropkowany przebieg na schematach przedstawia kroki w dodatkową kompresją:
+<ul>
+<li>w normalnym podejściu kompresja leży całkowicie na etapie zapisu do pliku png</li>
+<li>z dodatkową kompresją, kompresowany jest zserializowany obiekt, co okazało się skutecznym sposobem dodatkowego zmniejszenia wielkości pliku (zazwyczaj kosztem szybkości działania)</li>
+<li>dostępne (do tej pory testowane i zaimplementowane) algorytmy dodatkowej kompresji:
+<ul>
+<li>ppm</li>
+<li>lz4</li>
+<li>bz2</li>
+<li>zstandard</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>aby png był poprawnie odczytywany i traktowany jako obraz po kompresji, trzeba wyliczyć wymiary takiego obrazu - znajdowany jest najbliższy idealny pierwiastek wielkości ciągu bajtów, który chcemy przekształcić  w obraz, dzięki czemu uzyskiwane sa wymiary n x n.
+<ul>
+<li>często się zdarza, że brakuje pewnej ilości bajtów, aby była wystarczająca ilość danych na taki kwadrat, więc uzupełnia się dane pustymi bajtami, aby dopełnić brakującą część - ma to niewielki wpływ na wielkość pliku</li>
+<li>aby nie dopełniać danych pustymi bajtami, obraz musiałby być prostokątem, ale to wymagałoby znalezienia “środkowych” dzielników długości ciągu bajtów, co jest mniej wydajne w pythonie niż najbliższy idealny pierwiastek (przynajmniej metody, które wykorzystywaliśmy do tego były wolniejsze, ale może jest na to jakiś sposób)</li>
+</ul>
+</li>
+<li>plik png jest zapisywany w domyślnej kompresji, z głebią 8 bitową</li>
+</ul>
+<h2 id="benchmark">Benchmark</h2>
+<ul>
+<li>porównanie (skromne) było przprowadzone tylko na sekwencjach nukleotydowych w formacie FASTA</li>
+<li>była również próba porównania tej metody względem wczytywania surowej fasty, pickle obiektu (binarka), skompresowanej fasty do .gz (tak jak ściągniety plik z NCBI) oraz skompresowanego pickla do .gz - png z każdym z nich wygrało lub ewentualnie było na równi (jedynie pickle potrafił doścignąć). Niestety, nie został ten test zapisany.</li>
+<li>zstandard był uruchamiany z następującymi ustawieniami: level = 11, threads=-1</li>
+<li>poniższe testy były wykonane na komputerze z i7-11700K, 32 GB ram oraz WD Blue SN550 1 TB M.2 PCIe NVMe 3.0</li>
+</ul>
+<h3 id="zapis">Zapis</h3>
+
+<table>
+<thead>
+<tr>
+<th align="right"></th>
+<th align="left">type</th>
+<th align="left">file name</th>
+<th align="right">original file size (MB)</th>
+<th align="right">new file size (MB)</th>
+<th align="right">exec time (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">0</td>
+<td align="left">standard</td>
+<td align="left">NC_017186.fna</td>
+<td align="right">9.90208</td>
+<td align="right">2.70461</td>
+<td align="right">1.55734</td>
+</tr>
+<tr>
+<td align="right">1</td>
+<td align="left">ppm</td>
+<td align="left">NC_017186.fna</td>
+<td align="right">9.90208</td>
+<td align="right">2.18798</td>
+<td align="right">1.09161</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td align="left">lz4</td>
+<td align="left">NC_017186.fna</td>
+<td align="right">9.90208</td>
+<td align="right">3.61305</td>
+<td align="right">0.494656</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td align="left">bz2</td>
+<td align="left">NC_017186.fna</td>
+<td align="right">9.90208</td>
+<td align="right">2.46714</td>
+<td align="right">0.678548</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td align="left">zstd</td>
+<td align="left">NC_017186.fna</td>
+<td align="right">9.90208</td>
+<td align="right">2.61913</td>
+<td align="right">1.08084</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td align="left">standard</td>
+<td align="left">caenorhabditis_elegans.fna</td>
+<td align="right">96.8361</td>
+<td align="right">29.5382</td>
+<td align="right">13.8723</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td align="left">ppm</td>
+<td align="left">caenorhabditis_elegans.fna</td>
+<td align="right">96.8361</td>
+<td align="right">23.574</td>
+<td align="right">10.9034</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td align="left">lz4</td>
+<td align="left">caenorhabditis_elegans.fna</td>
+<td align="right">96.8361</td>
+<td align="right">38.4445</td>
+<td align="right">4.0271</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td align="left">bz2</td>
+<td align="left">caenorhabditis_elegans.fna</td>
+<td align="right">96.8361</td>
+<td align="right">26.3349</td>
+<td align="right">6.25205</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td align="left">zstd</td>
+<td align="left">caenorhabditis_elegans.fna</td>
+<td align="right">96.8361</td>
+<td align="right">28.2227</td>
+<td align="right">2.78426</td>
+</tr>
+</tbody>
+</table><h3 id="odczyt">Odczyt</h3>
+
+<table>
+<thead>
+<tr>
+<th align="right"></th>
+<th align="left">type</th>
+<th align="left">file name</th>
+<th align="right">file size (MB)</th>
+<th align="right">exec time (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="right">0</td>
+<td align="left">bz2</td>
+<td align="left">bench\caenorhabditis_elegans_bz2.png</td>
+<td align="right">26.3349</td>
+<td align="right">2.7908</td>
+</tr>
+<tr>
+<td align="right">1</td>
+<td align="left">lz4</td>
+<td align="left">bench\caenorhabditis_elegans_lz4.png</td>
+<td align="right">38.4445</td>
+<td align="right">0.386278</td>
+</tr>
+<tr>
+<td align="right">2</td>
+<td align="left">ppm</td>
+<td align="left">bench\caenorhabditis_elegans_ppm.png</td>
+<td align="right">23.574</td>
+<td align="right">3.57138</td>
+</tr>
+<tr>
+<td align="right">3</td>
+<td align="left">standard</td>
+<td align="left">bench\caenorhabditis_elegans_standard.png</td>
+<td align="right">29.5382</td>
+<td align="right">0.340723</td>
+</tr>
+<tr>
+<td align="right">4</td>
+<td align="left">zstd</td>
+<td align="left">bench\caenorhabditis_elegans_zstd.png</td>
+<td align="right">28.2227</td>
+<td align="right">0.206723</td>
+</tr>
+<tr>
+<td align="right">5</td>
+<td align="left">bz2</td>
+<td align="left">bench\NC_017186_bz2.png</td>
+<td align="right">2.46714</td>
+<td align="right">0.290505</td>
+</tr>
+<tr>
+<td align="right">6</td>
+<td align="left">lz4</td>
+<td align="left">bench\NC_017186_lz4.png</td>
+<td align="right">3.61305</td>
+<td align="right">0.0407304</td>
+</tr>
+<tr>
+<td align="right">7</td>
+<td align="left">ppm</td>
+<td align="left">bench\NC_017186_ppm.png</td>
+<td align="right">2.18798</td>
+<td align="right">0.303751</td>
+</tr>
+<tr>
+<td align="right">8</td>
+<td align="left">standard</td>
+<td align="left">bench\NC_017186_standard.png</td>
+<td align="right">2.70461</td>
+<td align="right">0.0344474</td>
+</tr>
+<tr>
+<td align="right">9</td>
+<td align="left">zstd</td>
+<td align="left">bench\NC_017186_zstd.png</td>
+<td align="right">2.61913</td>
+<td align="right">0.0165492</td>
+</tr>
+</tbody>
+</table><h2 id="repozytorium">Repozytorium</h2>
+<p>Kod jest publicznie dostępny:<br>
+<a href="https://github.com/phenolophthaleinum/fasta2png">https://github.com/phenolophthaleinum/fasta2png</a>.<br>
+(przepraszamy za nieporządek ;) )</p>
+</div>
+</body>
+
+</html>

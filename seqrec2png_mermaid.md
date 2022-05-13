@@ -1,3 +1,16 @@
+---
+mainfont: Lato-Regular.ttf
+monofont: RobotoMono-Regular.ttf
+mainfontoptions:
+- Scale=1.0
+- BoldFont=Lato-Bold.ttf
+- ItalicFont=Lato-Italic.ttf
+- BoldItalicFont=Lato-BoldItalic.ttf
+---
+
+# fasta2png
+
+```{.mermaid theme=neutral height=400 width=1000 format=pdf}
 graph TD
     subgraph png2SeqRecord
     sq7(load png into byte array)-->sq8(dill load object)
@@ -13,3 +26,4 @@ graph TD
     sq3-->sq4(add null bytes to fill up into square image)
     sq4-->sq6(save bytes to png)
     end
+```
